@@ -7,13 +7,13 @@ make all
 
 ## Ejecución
 
-Ejemplo ejecución Share: 
+### Ejecución Share: 
 
 ./Share archivo.txt 3 6 
 
 archivo umbral (3) total_shares (6)
 
-Ejemplo ejecución Recover: 
+### Ejecución Recover: 
 
 ./Recover archivo.txt 3 6
 
