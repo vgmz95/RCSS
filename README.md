@@ -1,10 +1,11 @@
 # RCSS
-# Comandos:
+## Instalación bibliotecas
+sudo apt-get install libcrypto++6 libcrypto++-dev
 
-instalar librerias: sudo apt-get install libcrypto++6 libcrypto++-dev
+## Compilar
+make all
 
-
-compilar: make all
+## Ejecución
 
 Ejemplo ejecución Share: 
 
