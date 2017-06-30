@@ -1,5 +1,7 @@
 # RCSS
-instalar librerias:
+# Comandos:
+
+instalar librerias: sudo apt-get install libcrypto++6 libcrypto++-dev
 
 
 compilar: make all
