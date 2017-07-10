@@ -12,6 +12,7 @@
 #include <cryptopp/ccm.h>
 #include <cryptopp/randpool.h>
 #include <cryptopp/channels.h>
+#include <cryptopp/hex.h>
 
 //IDA y Shamir
 #include <cryptopp/ida.h>
@@ -20,11 +21,10 @@
 using namespace std;
 using namespace CryptoPP;
 
-void SecretShare(int threshold, int nShares, byte llave[], const char *seed, string filename); //Share PSS- El argumento 'seed' es para añadir aleatoridad al algoritmo
+void SecretShare(int threshold, int nShares, string llave, const char *seed, string filename); //Share PSS- El argumento 'seed' es para añadir aleatoridad al algoritmo
 void InformationDisperseFile(int threshold, int nShares, string filename);//Share IDA
 
 int main(int argc, char *argv[]){
-	//**Falta generar las cosas de forma aleatoria**
 	string archivo;
 	int umbral;
 	int numeroShares;
@@ -39,18 +39,21 @@ int main(int argc, char *argv[]){
 	}
 	
 	//Llave k
-	array<byte,AES::DEFAULT_KEYLENGTH> llave;
-	memset(llave.data(),'\0',llave.size());//Limpieza de la llave	
+	SecByteBlock llave(NULL,AES::DEFAULT_KEYLENGTH);//NULL para inicializar en 0's
+	OS_GenerateRandomBlock(false,llave,llave.size());//Generacion aleatoria de la llave mediante /dev/urandom
+	string llave_string;
+	StringSource(llave, llave.size(), true,		
+		new StringSink(llave_string)
+	);
 	
-	//Vector de inicializacion IV  *Checar como se va a almacenar eso :v*
-	array<byte,AES::BLOCKSIZE> iv;
-	memset(iv.data(),'\0',iv.size());//Limpieza del IV
+	//Vector de inicializacion IV  *Debe de ser público*
+	SecByteBlock iv(NULL,AES::BLOCKSIZE);//NULL para inicializar en 0's
 	
 	 try {
 		//Cifrado del archivo
 		string archivoCifrado(archivo+".C"); 
 		CBC_Mode<AES>::Encryption cifrado; //Objeto para el cifrado usando AES modo CBC
-		cifrado.SetKeyWithIV(llave.data(),llave.size(), iv.data());//Se asigna la llave y el IV
+		cifrado.SetKeyWithIV(llave,llave.size(), iv);//Se asigna la llave y el IV
 		FileSource s(archivo.c_str(),true,
 			new StreamTransformationFilter(cifrado,
 				new FileSink (archivoCifrado.c_str(),true)
@@ -59,7 +62,9 @@ int main(int argc, char *argv[]){
 		
 		//PSS
 		string archivoLlave(archivo+".K"); //Nombre del archivo de salida del proceso de Share PSS 
-		SecretShare(umbral,numeroShares,llave.data(),"",archivoLlave);//Share PSS k->K_negrita 
+		SecretShare(umbral,numeroShares,llave_string,"",archivoLlave);//Share PSS k->K_negrita 
+		llave_string.clear();//Elimina la cadena que contenía la llave
+
 		//IDA
 		InformationDisperseFile(umbral,numeroShares,archivoCifrado);//Share IDA c->C_negrita	
 		remove(archivoCifrado.c_str());//Borra el archivo cifrado
@@ -71,7 +76,7 @@ int main(int argc, char *argv[]){
 	return 0;
 }
 
-void SecretShare(int threshold, int nShares, byte llave[], const char *seed, string filename){
+void SecretShare(int threshold, int nShares, string llave, const char *seed, string filename){
 	if (nShares < 1 || nShares > 1000)
 		throw InvalidArgument("SecretShareFile: " + IntToString(nShares) + " is not in range [1, 1000]");	
 	
@@ -79,7 +84,7 @@ void SecretShare(int threshold, int nShares, byte llave[], const char *seed, str
 	rng.IncorporateEntropy((byte *)seed, strlen(seed));
 
 	ChannelSwitch *channelSwitch = NULL;
-	ArraySource source(llave, false, 
+	StringSource source(llave, false, 
 		new SecretSharing(rng, threshold, nShares, 
 			channelSwitch = new ChannelSwitch)
 	);
@@ -101,6 +106,7 @@ void SecretShare(int threshold, int nShares, byte llave[], const char *seed, str
 	source.PumpAll();	
 }
 
+//OK
 void InformationDisperseFile(int threshold, int nShares, string filename){
 	if (threshold < 1 || threshold > 1000)
 		throw InvalidArgument("InformationDisperseFile: " + IntToString(nShares) + " is not in range [1, 1000]");

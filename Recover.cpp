@@ -20,7 +20,7 @@
 using namespace std;
 using namespace CryptoPP;
 
-void SecretRecover(int threshold, array<byte,AES::DEFAULT_KEYLENGTH> &llave, string inFilenames[]);//Recover PSS
+SecByteBlock SecretRecover(int threshold, SecByteBlock llave, string inFilenames[]);//Recover PSS
 void InformationRecoverFile(int threshold, string outFilename, string inFilenames[]);//Recover IDA
 
 int main(int argc, char *argv[]){
@@ -41,13 +41,12 @@ int main(int argc, char *argv[]){
 	try {
 	
 		//Llave k
-		array<byte,AES::DEFAULT_KEYLENGTH> llave;
-		memset(llave.data(),'\0',llave.size());//Limpieza de la llave	
+		SecByteBlock llave(NULL,AES::DEFAULT_KEYLENGTH);//NULL para inicializar en 0's
 		
-		//Vector de inicializacion IV  *Checar como se va a almacenar eso :v*
-		array<byte,AES::BLOCKSIZE> iv;
-		memset(iv.data(),'\0',iv.size());//Limpieza del IV
+		//Vector de inicializacion IV
+		SecByteBlock iv(NULL,AES::DEFAULT_KEYLENGTH);//NULL para inicializar en 0's
 		
+		//For para generar los nombres de los archivos de la llave K con base en el nombre del archivo a recuperar
 		string *archivosK=new string[numeroShares];
 		for(int i=0;i<numeroShares;i++){
 			char extension[5] = ".000";
@@ -57,6 +56,7 @@ int main(int argc, char *argv[]){
 			archivosK[i]=archivo+".K"+extension;
 		}
 		
+		//For para generar los nombres de los archivos del cifrado C con base en el nombre del archivo a recuperar
 		string *archivosC=new string[numeroShares];
 		for(int i=0;i<numeroShares;i++){
 			char extension[5] = ".000";
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]){
 		}
 		
 		//Recover PSS K_negrita->k
-		SecretRecover(umbral,llave,archivosK);
+		llave=SecretRecover(umbral,llave,archivosK);
 		
 		//Recover IDA C_negrita->c
 		string archivoCifrado(archivo+".c"); 
@@ -75,16 +75,18 @@ int main(int argc, char *argv[]){
 		
 		//Decrypt_k_(C) 
 		CBC_Mode< AES >::Decryption d;
-		d.SetKeyWithIV(llave.data(),llave.size(), iv.data());
+		d.SetKeyWithIV(llave,llave.size(),iv);
 		FileSource s(archivoCifrado.c_str(),true,
 			new StreamTransformationFilter(d,
-				new FileSink (("Recuperado_"+archivo).c_str(),true)
+				new FileSink (("RECUPERADO_"+archivo).c_str(),true)
 			) 
 		);
 		
-		remove(archivoCifrado.c_str());//Borra el archivo cifrado		
+		remove(archivoCifrado.c_str());//Borra el archivo cifrado C
 		delete[] archivosC;
 		delete[] archivosK;
+		
+
 		
 	}catch(exception& e){
 		cerr<<"Error durante el proceso del archivo: "<<e.what()<<endl;
@@ -119,12 +121,12 @@ void InformationRecoverFile(int threshold, string outFilename, string inFilename
 		fileSources[i]->PumpAll();
 }
 
-void SecretRecover(int threshold,array<byte,AES::DEFAULT_KEYLENGTH> &llave, string inFilenames[]){	
+SecByteBlock SecretRecover(int threshold, SecByteBlock llave, string inFilenames[]){	
 	if (threshold < 1 || threshold > 1000)
 		throw InvalidArgument("SecretRecoverFile: " + IntToString(threshold) + " is not in range [1, 1000]");
 
 	SecretRecovery recovery(threshold, 
-		new ArraySink(llave.data(),llave.size())
+		new ArraySink(llave,llave.size())
 	);
 
 	vector_member_ptrs<FileSource> fileSources(threshold);
@@ -143,4 +145,6 @@ void SecretRecover(int threshold,array<byte,AES::DEFAULT_KEYLENGTH> &llave, stri
 
 	for (i=0; i<threshold; i++)
 		fileSources[i]->PumpAll();
+
+	return llave;
 }
