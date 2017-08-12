@@ -1,105 +1,113 @@
 #include "Llave.hpp"
-#include <cryptopp/cryptlib.h>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <cstring>
 #include <cryptopp/osrng.h>
 #include <cryptopp/aes.h>//Cifrador por bloques AES
 #include <cryptopp/ida.h>//IDA y Shamir
 #include <cryptopp/files.h> //Archivos
 #include <cryptopp/filters.h> //
-#include <cryptopp/hex.h> //quitar los HEX
 #include "drbg.h"
 
-Llave::Llave(){
-	llave=CryptoPP::SecByteBlock(NULL,CryptoPP::AES::DEFAULT_KEYLENGTH);
-	CryptoPP::SecByteBlock entropy=generaEntropia();//Inicializacion de la semilla (entropia)
-	drbg=new CryptoPP::Hash_DRBG<CryptoPP::SHA256, 128/8, 440/8> (entropy, 32, entropy+32, 16); //Generador NIST Hash_DRBG, tiene como semilla la entropia generada anteriormente
+Llave::Llave(std::string nombre_archivo) {
+    this->llave_data = CryptoPP::SecByteBlock(NULL, CryptoPP::AES::DEFAULT_KEYLENGTH);
+    this->llave_data_string = "";
+    this->llave_nombre_archivo = nombre_archivo += ".K";
+    CryptoPP::SecByteBlock entropy = generaEntropia(); //Inicializacion de la semilla (entropia)
+    this->drbg = new CryptoPP::Hash_DRBG < CryptoPP::SHA256, 128 / 8, 440 / 8 > (entropy, 32, entropy + 32, 16); //Generador NIST Hash_DRBG, tiene como semilla la entropia generada anteriormente
 }
 
-Llave::~Llave(){
-	delete drbg;	
+Llave::Llave(std::string nombre_archivo, std::vector <std::string> nombres_fragmentos_PSS) {
+    this->llave_data = CryptoPP::SecByteBlock(NULL, CryptoPP::AES::DEFAULT_KEYLENGTH);
+    this->llave_data_string = "";
+    this->llave_nombre_archivo = nombre_archivo += ".K";
+    CryptoPP::SecByteBlock entropy = generaEntropia(); //Inicializacion de la semilla (entropia)
+    this->drbg = new CryptoPP::Hash_DRBG < CryptoPP::SHA256, 128 / 8, 440 / 8 > (entropy, 32, entropy + 32, 16); //Generador NIST Hash_DRBG, tiene como semilla la entropia generada anteriormente
+    this->nombres_fragmentos_PSS = nombres_fragmentos_PSS;
 }
 
-CryptoPP::SecByteBlock Llave::obtieneLlave(){
-	return llave;
+Llave::~Llave() {
+    delete drbg;
+    this->llave_data_string.clear();
+    this->llave_nombre_archivo.clear();
+    this->nombres_fragmentos_PSS.clear();
 }
 
-CryptoPP::SecByteBlock Llave::generaEntropia(){//Función que se manda a llamar cada vez que se necesita añadir entropia al generador del NIST
-	CryptoPP::SecByteBlock entropy(NULL,48); //Bloque donde se almacena la entropia
-	OS_GenerateRandomBlock(true,entropy,entropy.size());
-	return entropy;
+CryptoPP::SecByteBlock Llave::obtieneLlave() {
+    return llave_data;
 }
 
-void Llave::generar(){//Función que genera una llave aleatoria para el cifrador AES
-	//CryptoPP::SecByteBlock entropy=generaEntropia(); //Se genera más entropia para el generador del NIST
-	//drbg->IncorporateEntropy(entropy,entropy.size());//Se añade
-	drbg->GenerateBlock(llave,llave.size());//Se genera una llave aleatoria
-	llaveCadena.clear();
-	CryptoPP::ArraySource(llave, llave.size(), true,
-		new CryptoPP::StringSink(llaveCadena)
-	);
-	/////////////////
-	std::string encoded="";
-	encoded.clear();
-	CryptoPP::StringSource ss( llaveCadena,true,new CryptoPP::HexEncoder(new CryptoPP::StringSink(encoded))); // StringSource
-	std::cout<<"Key:"<<encoded<<std::endl;
+CryptoPP::SecByteBlock Llave::generaEntropia() {//Función que se manda a llamar cada vez que se necesita añadir entropia al generador del NIST
+    CryptoPP::SecByteBlock entropy(NULL, 48); //Bloque donde se almacena la entropia
+    OS_GenerateRandomBlock(false, entropy, entropy.size());
+    return entropy;
 }
 
-std::vector <std::string> Llave::sharePSS(int umbral, int numeroShares, std::string nombreArchivo){
-	nombreArchivo+=".K"; ///////////Nombre base de los archivos de la llave. Se le añade al nombre del usuario la letra 'K' para denotar que es K negrita
-
-	if (numeroShares < 1 || numeroShares > 1000)
-			throw CryptoPP::InvalidArgument("SecretShareFile: " + CryptoPP::IntToString(numeroShares) + " is not in range [1, 1000]");
-
-	CryptoPP::ChannelSwitch *channelSwitch = NULL;
-	CryptoPP::StringSource source(llaveCadena, false,
-		new CryptoPP::SecretSharing(*drbg, umbral, numeroShares,
-			channelSwitch = new CryptoPP::ChannelSwitch)
-	);
-
-	std::vector <std::string> nombresArchivosPSS; //Vector donde se almacenan los nombres de los archivos generados
-
-	CryptoPP::vector_member_ptrs<CryptoPP::FileSink> fileSinks(numeroShares);
-	std::string channel;
-	for (int i=0; i<numeroShares; i++){
-		char extension[5] = ".000";
-		extension[1]='0'+byte(i/100);
-		extension[2]='0'+byte((i/10)%10);
-		extension[3]='0'+byte(i%10);
-		fileSinks[i].reset(new CryptoPP::FileSink((nombreArchivo+extension).c_str()));
-		nombresArchivosPSS.push_back(nombreArchivo+extension);//Se añade el nombre archivo al vector
-		channel = CryptoPP::WordToString<CryptoPP::word32>(i);
-		fileSinks[i]->Put((const byte *)channel.data(), 4);
-		channelSwitch->AddRoute(channel, *fileSinks[i], CryptoPP::DEFAULT_CHANNEL);
-	}
-
-	source.PumpAll();
-	return nombresArchivosPSS;
+void Llave::generar() {//Función que genera una llave aleatoria para el cifrador AES
+    drbg->GenerateBlock(llave_data, llave_data.size()); //Se genera una llave aleatoria
+    llave_data_string.clear();
+    CryptoPP::ArraySource(llave_data, llave_data.size(), true,
+            new CryptoPP::StringSink(llave_data_string)
+            );
 }
 
+std::vector <std::string> Llave::sharePSS(unsigned int umbral, unsigned int numero_shares) {
+    if (numero_shares < 1 || numero_shares > 1000)
+        throw CryptoPP::InvalidArgument("SecretShareFile: " + CryptoPP::IntToString(numero_shares) + " is not in range [1, 1000]");
 
+    CryptoPP::ChannelSwitch *channelSwitch = NULL;
+    CryptoPP::StringSource source(llave_data_string, false,
+            new CryptoPP::SecretSharing(*drbg, umbral, numero_shares,
+            channelSwitch = new CryptoPP::ChannelSwitch)
+            );
 
-void Llave::recoverPSS(int umbral, int numeroShares, std::vector <std::string> nombresArchivosPSS){
-	if (umbral < 1 || umbral > 1000)
-		throw CryptoPP::InvalidArgument("SecretRecoverFile: " + CryptoPP::IntToString(umbral) + " is not in range [1, 1000]");
+    CryptoPP::vector_member_ptrs<CryptoPP::FileSink> fileSinks(numero_shares);
+    std::string channel;
 
-	CryptoPP::SecretRecovery recovery(umbral,
-		new CryptoPP::ArraySink(llave,llave.size())
-	);
+    std::string extension;
+    std::string llave_nombre_archivo_tmp;
+    std::stringstream str_stream;
+    for (unsigned int i = 0; i < numero_shares; i++) {        
+        str_stream << std::setw(3) << std::setfill('0') << i; //Genera la cadena 000,001,002
+        extension = '.' + str_stream.str();
+        llave_nombre_archivo_tmp = llave_nombre_archivo + extension;
+        fileSinks[i].reset(new CryptoPP::FileSink(llave_nombre_archivo_tmp.c_str()));
+        nombres_fragmentos_PSS.push_back(llave_nombre_archivo_tmp); //Se añade el nombre archivo al vector
+        channel = CryptoPP::WordToString<CryptoPP::word32>(i);
+        fileSinks[i]->Put((const byte *) channel.data(), 4);
+        channelSwitch->AddRoute(channel, *fileSinks[i], CryptoPP::DEFAULT_CHANNEL);
+        extension.clear();
+        str_stream.str("");
+        str_stream.clear();
+    }
+    source.PumpAll();
+    return nombres_fragmentos_PSS;
+}
 
-	CryptoPP::vector_member_ptrs<CryptoPP::FileSource> fileSources(umbral);
-	CryptoPP::SecByteBlock channel(4);
-	int i;
-	for (i=0; i<umbral; i++){
-		fileSources[i].reset(new CryptoPP::FileSource(nombresArchivosPSS[i].c_str(), false));
-		fileSources[i]->Pump(4);
-		fileSources[i]->Get(channel, 4);
-		fileSources[i]->Attach(new CryptoPP::ChannelSwitch(recovery, std::string((char *)channel.begin(), 4)));
-	}
+void Llave::recoverPSS(unsigned int umbral, unsigned int numeroShares) {
+    if (umbral < 1 || umbral > 1000)
+        throw CryptoPP::InvalidArgument("SecretRecoverFile: " + CryptoPP::IntToString(umbral) + " is not in range [1, 1000]");
 
-	while (fileSources[0]->Pump(256))
-		for (i=1; i<umbral; i++)
-			fileSources[i]->Pump(256);
+    CryptoPP::SecretRecovery recovery(umbral,
+            new CryptoPP::ArraySink(llave_data, llave_data.size())
+            );
 
-	for (i=0; i<umbral; i++)
-		fileSources[i]->PumpAll();
+    CryptoPP::vector_member_ptrs<CryptoPP::FileSource> fileSources(umbral);
+    CryptoPP::SecByteBlock channel(4);
+    unsigned int i;
+    for (i = 0; i < umbral; i++) {
+        fileSources[i].reset(new CryptoPP::FileSource(nombres_fragmentos_PSS[i].c_str(), false));
+        fileSources[i]->Pump(4);
+        fileSources[i]->Get(channel, 4);
+        fileSources[i]->Attach(new CryptoPP::ChannelSwitch(recovery, std::string((char *) channel.begin(), 4)));
+    }
+
+    while (fileSources[0]->Pump(256))
+        for (i = 1; i < umbral; i++)
+            fileSources[i]->Pump(256);
+
+    for (i = 0; i < umbral; i++)
+        fileSources[i]->PumpAll();
 
 }

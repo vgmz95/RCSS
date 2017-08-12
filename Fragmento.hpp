@@ -3,20 +3,24 @@
 #include <string>
 #include <iostream>
 #include <cryptopp/sha.h>
-class Fragmento{
-private:
-  std::string K;
-  std::string C;
-  std::string H;
-  bool ok;
-  std::vector<std::string> S;
 
-  void acumulaHashArchivo(CryptoPP::SHA256 &sha256, std::string nombreArchivo);
+class Fragmento {
 public:
-  Fragmento(std::string K, std::string C);
-  void obtieneHash(std::string nombreArchivo, int indice);
-  void shareECC(void);
-  void recoverECC(void);
+    Fragmento(std::string K, std::string C, std::vector<std::string> S);
+    
+private:
+    std::string K_nombre_archivo;
+    std::string C_nombre_archivo;
+    std::vector<std::string> S_nombre_fragmentos_ECC;
+    std::string H_data;
+    std::vector<std::string> S_data;
+    bool ok;
+
+    void acumulaHashArchivo(CryptoPP::SHA256 &sha256, std::string nombreArchivo);
+
+
 };
+
+
 
 #endif
