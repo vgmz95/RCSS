@@ -6,18 +6,23 @@
 
 class Fragmento {
 public:
-    Fragmento(std::string K, std::string C, std::vector<std::string> S);
-    
+    Fragmento(std::string K, std::string C, std::vector<std::string> S, int indice);
+    std::vector<std::string> getS() const;
+    std::string getC() const;
+    std::string getK() const;
+    void recuperar();
+    bool isOk() const;
+    int getIndice() const;
+
+    friend std::ostream& operator<<(std::ostream& os, const Fragmento& obj);
+
+
 private:
     std::string K_nombre_archivo;
     std::string C_nombre_archivo;
     std::vector<std::string> S_nombre_fragmentos_ECC;
-    std::string H_data;
-    std::vector<std::string> S_data;
     bool ok;
-
-    void acumulaHashArchivo(CryptoPP::SHA256 &sha256, std::string nombreArchivo);
-
+    int indice;
 
 };
 

@@ -19,13 +19,12 @@ public:
     void setNombresFragmentosIDA(std::vector<std::string> nombres_fragmentos_IDA);
     void setNombreArchivoCifrado(std::string nombre_archivo_cifrado);
     void setNombreArchivo(std::string nombre_archivo);
+     
     
 private:
     std::string nombre_archivo;
     std::string nombre_archivo_cifrado;
     std::vector <std::string> nombres_fragmentos_IDA;
-
-
 };
 
 #endif

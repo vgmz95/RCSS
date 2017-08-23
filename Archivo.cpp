@@ -51,7 +51,7 @@ void Archivo::descifrar(Llave &llave, CryptoPP::SecByteBlock iv) {
 std::vector<std::string> Archivo::shareIDA(unsigned int umbral, unsigned int numero_shares) {
     if (umbral < 1 || umbral > 1000)
         throw CryptoPP::InvalidArgument("InformationDisperseFile: " + CryptoPP::IntToString(numero_shares) + " is not in range [1, 1000]");
-
+    nombres_fragmentos_IDA.reserve(numero_shares);
     CryptoPP::ChannelSwitch *channelSwitch = NULL;
     CryptoPP::FileSource source(nombre_archivo_cifrado.c_str(), false,
             new CryptoPP::InformationDispersal(umbral, numero_shares,

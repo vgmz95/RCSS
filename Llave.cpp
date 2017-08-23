@@ -55,7 +55,8 @@ void Llave::generar() {//Función que genera una llave aleatoria para el cifrado
 std::vector <std::string> Llave::sharePSS(unsigned int umbral, unsigned int numero_shares) {
     if (numero_shares < 1 || numero_shares > 1000)
         throw CryptoPP::InvalidArgument("SecretShareFile: " + CryptoPP::IntToString(numero_shares) + " is not in range [1, 1000]");
-
+    
+    nombres_fragmentos_PSS.reserve(numero_shares);
     CryptoPP::ChannelSwitch *channelSwitch = NULL;
     CryptoPP::StringSource source(llave_data_string, false,
             new CryptoPP::SecretSharing(*drbg, umbral, numero_shares,
@@ -68,7 +69,7 @@ std::vector <std::string> Llave::sharePSS(unsigned int umbral, unsigned int nume
     std::string extension;
     std::string llave_nombre_archivo_tmp;
     std::stringstream str_stream;
-    for (unsigned int i = 0; i < numero_shares; i++) {        
+    for (unsigned int i = 0; i < numero_shares; i++) {
         str_stream << std::setw(3) << std::setfill('0') << i; //Genera la cadena 000,001,002
         extension = '.' + str_stream.str();
         llave_nombre_archivo_tmp = llave_nombre_archivo + extension;
@@ -85,7 +86,7 @@ std::vector <std::string> Llave::sharePSS(unsigned int umbral, unsigned int nume
     return nombres_fragmentos_PSS;
 }
 
-void Llave::recoverPSS(unsigned int umbral, unsigned int numeroShares) {
+void Llave::recoverPSS(unsigned int umbral, unsigned int numero_shares) {
     if (umbral < 1 || umbral > 1000)
         throw CryptoPP::InvalidArgument("SecretRecoverFile: " + CryptoPP::IntToString(umbral) + " is not in range [1, 1000]");
 
