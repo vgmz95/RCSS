@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <cryptopp/sha.h>
+#include "ServidorSsh.hpp"
 
 class Fragmento {
 public:
@@ -10,9 +11,11 @@ public:
     std::vector<std::string> getS() const;
     std::string getC() const;
     std::string getK() const;
-    void recuperar();
+    void recuperar(ServidorSsh, std::string, std::string);
+    void distribuir(ServidorSsh, std::string, std::string);
     bool isOk() const;
     int getIndice() const;
+    void borra();
 
     friend std::ostream& operator<<(std::ostream& os, const Fragmento& obj);
 

@@ -2,6 +2,7 @@
 #include <cryptopp/files.h>
 #include <cryptopp/hex.h>
 #include "ezpwd/rs"
+#include "ServidorSsh.hpp"
 
 Fragmento::Fragmento(std::string K, std::string C, std::vector<std::string> S, int indice) {
     this->K_nombre_archivo = K;
@@ -9,6 +10,32 @@ Fragmento::Fragmento(std::string K, std::string C, std::vector<std::string> S, i
     this->S_nombre_fragmentos_ECC = S;
     this->ok = false;
     this->indice = indice;
+}
+
+void Fragmento::borra() {
+    std::remove(K_nombre_archivo.c_str());
+    std::remove(C_nombre_archivo.c_str());
+    for (auto &s : S_nombre_fragmentos_ECC) {
+        std::remove(s.c_str());
+    }
+}
+
+void Fragmento::distribuir(ServidorSsh servidor, std::string carpeta, std::string nombre_archivo) {
+    std::vector <std::string> archivos;
+    archivos.reserve(K_nombre_archivo.size() + C_nombre_archivo.size() + S_nombre_fragmentos_ECC.size());
+    archivos.push_back(K_nombre_archivo);
+    archivos.push_back(C_nombre_archivo);
+    archivos.insert(archivos.end(), S_nombre_fragmentos_ECC.begin(), S_nombre_fragmentos_ECC.end());
+    ok = servidor.copiaHome(archivos, carpeta, nombre_archivo);
+}
+
+void Fragmento::recuperar(ServidorSsh servidor, std::string carpeta, std::string nombre_archivo) {
+    std::vector <std::string> archivos;
+    archivos.reserve(K_nombre_archivo.size() + C_nombre_archivo.size() + S_nombre_fragmentos_ECC.size());
+    archivos.push_back(K_nombre_archivo);
+    archivos.push_back(C_nombre_archivo);
+    archivos.insert(archivos.end(), S_nombre_fragmentos_ECC.begin(), S_nombre_fragmentos_ECC.end());
+    ok = servidor.recuperaHome(archivos, carpeta, nombre_archivo);
 }
 
 std::ostream& operator<<(std::ostream& os, const Fragmento& obj) {
@@ -32,10 +59,6 @@ std::string Fragmento::getC() const {
 
 std::string Fragmento::getK() const {
     return K_nombre_archivo;
-}
-
-void Fragmento::recuperar() {
-    ok = true;
 }
 
 bool Fragmento::isOk() const {

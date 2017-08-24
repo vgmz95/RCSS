@@ -2,20 +2,32 @@
 #include "Llave.hpp"
 #include "Hash.h"
 #include "Fragmento.hpp"
+#include "ServidorSsh.hpp"
 #include <cryptopp/aes.h>
 #include <string>
+#include <fstream>
+#include <iostream>
+#include <algorithm>
 
 int main(int argc, char *argv[]) {
     //Vector de inicializacion IV  *Debe de ser público*
     CryptoPP::SecByteBlock iv(NULL, CryptoPP::AES::BLOCKSIZE); //NULL para inicializar en 0's
     std::string nombre_archivo = "";
+    std::string carpeta_destino = "";
+    std::string nombre_archivo_servidores = "";
     unsigned int umbral;
     unsigned int numero_shares;
 
     try {//Parseo de argumentos
+        if (argc != 6) {
+            std::cout << "Uso: ./Share nombre_archivo umbral numero_shares carpeta_destino archivo_servidores" << std::endl;
+            return -1;
+        }
         nombre_archivo = std::string(argv[1]); //Archivo
         umbral = std::stoul(std::string(argv[2]));
         numero_shares = std::stoul(std::string(argv[3]));
+        carpeta_destino = std::string(argv[4]);
+        nombre_archivo_servidores = std::string(argv[5]);
         std::cout << "Archivo a procesar: " << nombre_archivo << " umbral: " << umbral << "," << numero_shares << std::endl;
     } catch (std::exception& e) {
         std::cerr << "Error al parsear los argumentos: " << e.what() << std::endl;
@@ -58,6 +70,41 @@ int main(int argc, char *argv[]) {
         fragmentos.push_back(fragmento);
     }
 
-    //std::remove(nombre_archivo.c_str()); //Se borra el archivo original una vez terminado el proceso de share
-    return 0;
+    //Lectura de servidores
+    std::ifstream archivo_servidores(nombre_archivo_servidores.c_str());
+    std::string servidor_str;
+    std::vector <ServidorSsh> servidores;
+    servidores.reserve(numero_shares);
+    while (std::getline(archivo_servidores, servidor_str)) {
+        std::string usuario = servidor_str.substr(0, servidor_str.find("@", 0));
+        std::string host = servidor_str.substr(servidor_str.find("@", 0) + 1);
+        std::cout << "Host: " << host << " Usuario: " << usuario << std::endl;
+        servidores.push_back(ServidorSsh(usuario, host));
+    }
+
+    //Distribucion en los demas servidores
+    for (unsigned int i = 0; i < fragmentos.size(); i++) {
+        fragmentos[i].distribuir(servidores[i], carpeta_destino, nombre_archivo);
+    }
+
+    unsigned int numero_OK = std::count_if(fragmentos.begin(), fragmentos.end(), [](const Fragmento & fragmento) {
+        return fragmento.isOk(); });
+
+    //Borrando archivos intermedios     
+    for (auto &fragmento : fragmentos) {
+        fragmento.borra();
+    }
+    std::cout << "Se borraron correctamente los archivos locales" << std::endl;
+
+    //Paso final
+    if (numero_OK >= umbral) {
+        std::cout << "Se distribuyeron correctamente todos los shares dentro del umbral" << std::endl;
+        std::remove(nombre_archivo.c_str()); //Se borra el archivo original una vez terminado el proceso de share
+        std::cout << "Se borró correctamente el archivo original" << std::endl;
+        return 0;
+    } else {
+        std::cout << "No se pudo distribuir el archivo dentro del umbral" << std::endl;
+        return -1;
+    }
 }
+

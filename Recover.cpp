@@ -6,12 +6,8 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
-
-void parseaArgumentos(char** argv, std::string& nombre_archivo, unsigned int& umbral, unsigned int& numero_shares) {
-    nombre_archivo = std::string(argv[1]); //Archivo
-    umbral = std::stoul(std::string(argv[2]));
-    numero_shares = std::stoul(std::string(argv[3]));
-}
+#include <fstream>
+#include <iostream>
 
 std::vector <std::string> generaNombresArchivos(std::string nombre_archivo, unsigned int numero_shares, std::string extension_intermedia) {
     std::vector <std::string> nombres;
@@ -77,11 +73,23 @@ int main(int argc, char *argv[]) {
     //Vector de inicializacion IV  *Debe de ser público*
     CryptoPP::SecByteBlock iv(NULL, CryptoPP::AES::BLOCKSIZE); //NULL para inicializar en 0's
     std::string nombre_archivo = "";
+    std::string carpeta_origen = "";
+    std::string nombre_archivo_servidores = "";
     unsigned int umbral;
     unsigned int numero_shares;
+
     //Parseo de argumentos
     try {
-        parseaArgumentos(argv, nombre_archivo, umbral, numero_shares);
+        if (argc != 6) {
+            std::cout << "Uso: ./Recover nombre_archivo umbral numero_shares carpeta_destino archivo_servidores" << std::endl;
+            return -1;
+        }
+        nombre_archivo = std::string(argv[1]); //Archivo
+        umbral = std::stoul(std::string(argv[2]));
+        numero_shares = std::stoul(std::string(argv[3]));
+        carpeta_origen = std::string(argv[4]);
+        nombre_archivo_servidores = std::string(argv[5]);
+        std::cout << "Archivo a procesar: " << nombre_archivo << " umbral: " << umbral << "," << numero_shares << std::endl;
     } catch (std::exception& e) {
         std::cerr << "Error al parsear los argumentos: " << e.what() << std::endl;
         return -1;
@@ -99,10 +107,21 @@ int main(int argc, char *argv[]) {
         fragmentos.push_back(fragmento);
     }
 
+    //Lectura de servidores
+    std::ifstream archivo_servidores(nombre_archivo_servidores.c_str());
+    std::string servidor_str;
+    std::vector <ServidorSsh> servidores;
+    servidores.reserve(numero_shares);
+    while (std::getline(archivo_servidores, servidor_str)) {
+        std::string usuario = servidor_str.substr(0, servidor_str.find("@", 0));
+        std::string host = servidor_str.substr(servidor_str.find("@", 0) + 1);
+        std::cout << "Host: " << host << " Usuario: " << usuario << std::endl;
+        servidores.push_back(ServidorSsh(usuario, host));
+    }
+
     //Recuperar fragmentos 
     for (unsigned int i = 0; i < fragmentos.size(); i++) {
-        //if (i == 1 || i == 5) continue;
-        fragmentos[i].recuperar();
+        fragmentos[i].recuperar(servidores[i], carpeta_origen, nombre_archivo);
     }
 
     //Asignacion de los fragmentos que sí se lograron recuperar de los demás servidores
@@ -166,6 +185,13 @@ int main(int argc, char *argv[]) {
     std::cout << "Descifrando archivo..." << std::flush;
     archivo.descifrar(llave, iv); //Descifrado
     std::cout << "OK" << std::endl;
+
+    //Borrar solamente los que si se lograron recuperar
+    //    std::cout << "Borrando archivos auxiliares..." << std::flush;
+    //    for (auto &fragmento : fragmentos) {
+    //        fragmento.borra();
+    //    }
+    //    std::cout << "OK" << std::endl;
 
     return 0;
 }
