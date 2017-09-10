@@ -2,9 +2,9 @@
 
 ## Libreria Cryptopp
 
-0)descomprimir la biblioteca
+0) Descomprimir la biblioteca en una carpeta dentro del proyecto llamada cryptopp
 
-1)compilar biblioteca cryptopp
+1) Compilar biblioteca cryptopp
 
 cd cryptopp
 
