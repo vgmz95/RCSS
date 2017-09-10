@@ -1,20 +1,25 @@
-# RCSS
-## Instalación bibliotecas
-sudo apt-get install libcrypto++6 libcrypto++-dev
+#Cryptopp
+0)descomprimir la biblioteca
+1)compilar biblioteca cryptopp
+cd cryptopp
+make clean
+make
 
-## Compilar
-make all
+#compilar proyecto principal
+cd RCSS
+make 
 
-## Ejecución
+#Compilar programas borrar renombrar
+cd GestionArchivosCarpetas
+make
 
-### Ejecución Share
+#SSH
+https://help.ubuntu.com/lts/serverguide/openssh-server.html
+Secciones: Instalación y Claves SSH
+Se debe de configurar de tal forma que las computadoras tengan su propia llave rsa y la llave de las demás maquinas. (comando ssh-copy-id username@remotehost)
 
-./Share archivo.txt 3 6 
+#Ejecutar 
+./Share nombre_archivo umbral numero_shares carpeta_destino archivo_servidores
 
-archivo umbral (3) total_shares (6)
-
-### Ejecución Recover
-
-./Recover archivo.txt 3 6
-
-archivo umbral (3) total_shares (6)
+Ejemplo
+./Share archivo.txt 3 6 /carpetadestino/ejemplo servidores.txt
