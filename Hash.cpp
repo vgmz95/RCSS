@@ -1,14 +1,13 @@
-#include "Hash.h"
+#include "Hash.hpp"
 #include <string>
 #include <cstring>
 #include <sstream>
 #include <iomanip>
 #include <cryptopp/sha.h>
-#include <cryptopp/secblock.h>
-#include <cryptopp/filters.h>
+#include <cryptopp/ida.h>
 #include <cryptopp/files.h> //
 #include "ezpwd/rs"
-#include <cryptopp/ida.h>
+
 
 Hash::Hash(unsigned int indice) {
     this->H_data_string = "";

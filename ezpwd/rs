@@ -17,6 +17,7 @@
 #define _EZPWD_RS
 
 #include "rs_base"
+#include <stdexcept>
 
 // 
 // ezpwd::RS<SYMBOLS,PAYLOAD>	-- Implements an RS(SYMBOLS,PAYLOAD) codec

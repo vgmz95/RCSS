@@ -1,9 +1,10 @@
 #include "Archivo.hpp"
+#include "Llave.hpp" 
 #include <cryptopp/files.h> //Escritura en archivos
-#include <cryptopp/aes.h>//Cifrador por bloques AES
-#include <cryptopp/ccm.h>//Modo de operación CBC
-#include <cryptopp/ida.h>//IDA y Shamir
-#include <cryptopp/filters.h>
+#include <cryptopp/ida.h> //IDA y Shamir
+#include <cryptopp/aes.h> //Cifrador por bloques AES
+#include <cryptopp/ccm.h> //Modo de operación CBC
+
 #include <string>
 #include <sstream>
 #include <iomanip>

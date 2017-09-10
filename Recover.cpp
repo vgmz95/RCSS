@@ -1,7 +1,6 @@
-#include "Llave.hpp"
 #include "Archivo.hpp"
 #include "Fragmento.hpp"
-#include "Hash.h"
+#include "Hash.hpp"
 #include <cryptopp/aes.h>
 #include <sstream>
 #include <iomanip>
@@ -113,10 +112,8 @@ int main(int argc, char *argv[]) {
     std::vector <ServidorSsh> servidores;
     servidores.reserve(numero_shares);
     while (std::getline(archivo_servidores, servidor_str)) {
-        std::string usuario = servidor_str.substr(0, servidor_str.find("@", 0));
-        std::string host = servidor_str.substr(servidor_str.find("@", 0) + 1);
-        std::cout << "Host: " << host << " Usuario: " << usuario << std::endl;
-        servidores.push_back(ServidorSsh(usuario, host));
+        std::cout << "Servidor: " << servidor_str << std::endl;
+        servidores.push_back(ServidorSsh(servidor_str));
     }
 
     //Recuperar fragmentos 

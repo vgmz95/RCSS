@@ -1,2 +1,2 @@
-victor@Master
-slave1@Slave1
+victor@Maestro
+victor@Esclavo1

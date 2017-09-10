@@ -4,11 +4,8 @@
 #include <iomanip>
 #include <cstring>
 #include <cryptopp/osrng.h>
-#include <cryptopp/aes.h>//Cifrador por bloques AES
 #include <cryptopp/ida.h>//IDA y Shamir
 #include <cryptopp/files.h> //Archivos
-#include <cryptopp/filters.h> //
-#include "drbg.h"
 
 Llave::Llave(std::string nombre_archivo) {
     this->llave_data = CryptoPP::SecByteBlock(NULL, CryptoPP::AES::DEFAULT_KEYLENGTH);

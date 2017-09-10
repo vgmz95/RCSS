@@ -1,8 +1,7 @@
 #ifndef LLAVE_H_
 #define LLAVE_H_
 #include <string>
-#include <cryptopp/secblock.h>
-#include "drbg.h"
+#include <cryptopp/drbg.h>
 
 class Llave {
 public:

@@ -1,8 +1,6 @@
 #ifndef FRAGMENTO_H_
 #define FRAGMENTO_H_
 #include <string>
-#include <iostream>
-#include <cryptopp/sha.h>
 #include "ServidorSsh.hpp"
 
 class Fragmento {
